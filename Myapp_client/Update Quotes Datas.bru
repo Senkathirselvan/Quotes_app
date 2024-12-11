@@ -1,0 +1,24 @@
+meta {
+  name: Update Quotes Datas
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://192.168.1.18:5000/api/update/7
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "category": "Motivation",
+    "quote": "The  senlkathir selvan only limit to our realization of tomorrow is our doubts of today.",
+    "author": "Franklin D. Roosevelt"
+  }
+  
+}
