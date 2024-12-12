@@ -13,8 +13,10 @@ db_url = os.getenv("DATABASE_URL")
 connection = psycopg2.connect(db_url)
 CREATE_QUOTES_TABLE = """CREATE TABLE IF NOT EXISTS quotes 
                         (id SERIAL PRIMARY KEY, 
+                        title VARCHAR(50),
                         category VARCHAR(50), 
-                        quote TEXT, author TEXT
+                        quote TEXT,
+                        author TEXT
                         );"""
 with connection:
     with connection.cursor() as cursor:
@@ -27,17 +29,18 @@ def upload():
         category = data.get("category")
         quote = data.get("quote")
         author = data.get("author")
+        title =  data.get("title")
         
-        if not category or not quote or not author:
+        if not category or not quote or not author or not title:
             return jsonify({"error":"All fields (category,quote,author) required"}),400
         INSERT_DATAS = """INSERT INTO quotes
-                (category,quote,author) 
-                VALUES (%s,%s,%s)
+                (category,quote,author,title ) 
+                VALUES (%s,%s,%s,%s)
                 RETURNING id;
                 """
         with connection:
             with connection.cursor() as cursor:
-                cursor.execute(INSERT_DATAS, (category, quote, author))
+                cursor.execute(INSERT_DATAS, (category, quote, author,title ))
                 new_id = cursor.fetchone()[0]
                 return jsonify({"message": "Quote added successfully", "id": new_id}), 201
     except Exception as e:
@@ -45,8 +48,6 @@ def upload():
         error_code = e.args
         return jsonify({"error": error_message, "code": error_code}) 
     
-
-
 @app.route("/api/update/<int:id>",methods=["POST"])
 def update(id):
     try:
@@ -54,15 +55,15 @@ def update(id):
         new_category = data.get("category")
         new_quote = data.get("quote")
         new_author = data.get("author")
-        # GET_PARTICULAR_QUOTE = "SELECT id,category,quote,author FROM quotes WHERE id=%s"
+        new_title = data.get("title")
         UPDATE_QUOTE = """
             UPDATE quotes
-            SET category=%s, quote = %s, author = %s
+            SET category=%s, quote = %s, author = %s, title =%s
             WHERE id = %s;
             """
         with connection:
             with connection.cursor() as cursor:
-                cursor.execute(UPDATE_QUOTE,(new_category,new_quote,new_author,id))
+                cursor.execute(UPDATE_QUOTE,(new_category,new_quote,new_author,new_title,id))
                 connection.commit()
                 if cursor.rowcount == 0:
                     return jsonify({"error": "No quote found with the provided id"}), 404
@@ -91,7 +92,7 @@ def delete(id):
 @app.route("/api/quotes",methods=["GET"])
 def quotes():
     try:
-        GET_QUOTE = "SELECT id,category,quote,author FROM quotes "
+        GET_QUOTE = "SELECT id,category,quote,author,title FROM quotes "
         with connection:
             with connection.cursor() as cursor:
                 cursor.execute(GET_QUOTE)
@@ -100,7 +101,8 @@ def quotes():
             return jsonify([{"id":quote[0],
                             "category":quote[1],
                             "quote":quote[2],
-                            "author":quote[3]}
+                            "author":quote[3],
+                            "title":quote[4]}
                             for quote in quotes])
         else:
             return jsonify({"message":"No datas available"})
@@ -112,7 +114,7 @@ def quotes():
 @app.route("/api/get_quote/<category>",methods=["GET"])
 def get_quote(category):
     try:
-        GET_QUOTE = "SELECT id,category,quote,author FROM quotes WHERE category=%s"
+        GET_QUOTE = "SELECT id,category,quote,author,title FROM quotes WHERE category=%s"
         with connection:
             with connection.cursor() as cursor:
                 cursor.execute(GET_QUOTE,(category,))
@@ -121,7 +123,8 @@ def get_quote(category):
             return jsonify([{"id":quote[0],
                             "category":quote[1],
                             "quote":quote[2],
-                            "author":quote[3]}
+                            "author":quote[3],
+                            "title":quote[4]}
                             for quote in quotes])
         else:
             return jsonify({"message":"No datas available"})
