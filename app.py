@@ -8,7 +8,6 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-
 db_url = os.getenv("DATABASE_URL")
 connection = psycopg2.connect(db_url)
 CREATE_QUOTES_TABLE = """CREATE TABLE IF NOT EXISTS quotes 
@@ -18,10 +17,62 @@ CREATE_QUOTES_TABLE = """CREATE TABLE IF NOT EXISTS quotes
                         quote TEXT,
                         author TEXT
                         );"""
+                        
+CREATE_LOGIN_TABLE = """CREATE TABLE IF NOT EXISTS login
+                        (id SERIAL PRIMARY KEY,
+                        username VARCHAR(50),
+                        password VARCHAR(50)
+                        );"""
 with connection:
     with connection.cursor() as cursor:
         cursor.execute(CREATE_QUOTES_TABLE)
-        
+        cursor.execute(CREATE_LOGIN_TABLE)
+           
+@app.route("/api/signup/upload",methods=["POST"])
+def username_password():
+    try:
+        data = request.get_json()
+        username = data.get("username")
+        password = data.get("password")
+        if not username or not password:
+            return jsonify({"error":"All feilds(username,password) required"})
+        INSERT_LOGIN_DATAS = """INSERT INTO login(username,password)
+                                VALUES(%s,%s)
+                                RETURNING id;
+                                """
+        with connection:
+            with connection.cursor() as cursor:
+                cursor.execute(INSERT_LOGIN_DATAS, (username, password))
+                up_id = cursor.fetchone()[0]
+                return jsonify({"message":f"Username Passssword added successfully with {up_id}",})
+    except Exception as e:
+        error_message = str(e)
+        error_code = e.args
+        return jsonify({"error message":error_message,"error code":error_code})
+
+@app.route("/api/login", methods=["GET"])
+def up_validation():
+    try:
+        data = request.get_json()
+        username = data.get("username")
+        password = data.get("password")
+        VALIDATE_USERNAME_PASSWORD = "SELECT * FROM login WHERE username=%s"
+        with connection:
+            with connection.cursor() as cursor:
+                cursor.execute(VALIDATE_USERNAME_PASSWORD,(username,))
+                user_data = cursor.fetchone()
+            if user_data:
+                if user_data[2] == password:
+                    return jsonify ({"Status":"success"})
+                else:
+                    return jsonify ({"Status":"Failde","message":"Check your username password"})
+            else:
+                return jsonify ({"Message":"No users found"})
+    except Exception as e:
+        error_message = str(e)  
+        error_code = e.args
+        return jsonify({"error": error_message, "code": error_code}) 
+    
 @app.route("/api/upload",methods=["POST"])
 def upload():
     try:
@@ -88,7 +139,6 @@ def delete(id):
         error_code = e.args
         return jsonify({"message":error_message,"code":error_code})
     
-   
 @app.route("/api/quotes",methods=["GET"])
 def quotes():
     try:
