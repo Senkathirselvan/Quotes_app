@@ -50,7 +50,7 @@ def username_password():
         error_code = e.args
         return jsonify({"error message":error_message,"error code":error_code})
 
-@app.route("/api/login", methods=["GET"])
+@app.route("/api/login", methods=["POST"])
 def up_validation():
     try:
         data = request.get_json()
