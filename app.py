@@ -142,7 +142,8 @@ def delete(id):
 @app.route("/api/quotes",methods=["GET"])
 def quotes():
     try:
-        GET_QUOTE = "SELECT id,category,quote,author,title FROM quotes "
+        GET_QUOTE = """SELECT id,category,quote,author,title FROM quotes
+                       WHERE category != 'default'; """
         with connection:
             with connection.cursor() as cursor:
                 cursor.execute(GET_QUOTE)
@@ -184,3 +185,5 @@ def get_quote(category):
         return jsonify({"error": error_message, "code": error_code}) 
 
 
+
+    
